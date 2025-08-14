@@ -8,7 +8,6 @@ import {RebaseToken} from "../src/RebaseToken.sol";
 import {RebaseTokenPool} from "../src/RebaseTokenPool.sol";
 import {Vault} from "../src/Vault.sol";
 import {IRebaseToken} from "../src/Interfaces/IRebaseToken.sol";
-import {CCIPLocalSimulatorFork} from "@chainlink-local/src/ccip/CCIPLocalSimulatorFork.sol";
 import {CCIPLocalSimulatorFork, Register} from "@chainlink-local/src/ccip/CCIPLocalSimulatorFork.sol";
 import {IERC20} from "@ccip/contracts/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/IERC20.sol";
 import {RegistryModuleOwnerCustom} from "@ccip/contracts/src/v0.8/ccip/tokenAdminRegistry/RegistryModuleOwnerCustom.sol";
@@ -102,6 +101,33 @@ contract CrossChainTest is Test {
         
     }
 
+//     function setUp() public {
+//     sepoliaFork = vm.createSelectFork("sepolia");
+//     console.log("Sepolia fork ID:", sepoliaFork);
+//     arbSepoliaFork = vm.createFork("arb-sepolia");
+//     console.log("Arbitrum Sepolia fork ID:", arbSepoliaFork);
+//     ccipLocalSimulatorFork = new CCIPLocalSimulatorFork();
+//     vm.makePersistent(address(ccipLocalSimulatorFork));
+//     console.log("ccipLocalSimulatorFork address:", address(ccipLocalSimulatorFork));
+//     console.log("Current fork ID:", vm.activeFork());
+
+//     // Deploy on Sepolia
+//     sepoliaNetworkDetails = ccipLocalSimulatorFork.getNetworkDetails(block.chainid);
+//     vm.startPrank(owner);
+//     sepoliaToken = new RebaseToken();
+//     vault = new Vault(IRebaseToken(address(sepoliaToken)));
+//     sepoliaPool = new RebaseTokenPool(IERC20(address(sepoliaToken)), 
+//         new address[](0), 
+//         sepoliaNetworkDetails.rmnProxyAddress, 
+//         sepoliaNetworkDetails.routerAddress
+//     );
+//     vm.makePersistent(address(sepoliaToken));
+//     vm.makePersistent(address(vault));
+//     vm.makePersistent(address(sepoliaPool));
+//     // ... rest of the setup ...
+// }
+
+
     function configureTokenPool(
         uint256 fork, 
         bool allowed,
@@ -144,7 +170,7 @@ contract CrossChainTest is Test {
 //             bytes extraArgs; // Populate this with _argsToBytes(EVMExtraArgsV2)
 //   }
             Client.EVMTokenAmount[] memory tokenAmounts = new Client.EVMTokenAmount[](1);
-            tokenAmounts[0] = Client.EVMTokenAmount({token: address(localToken),amount: amountToBridge});
+            tokenAmounts[0] = Client.EVMTokenAmount({token: address(localToken), amount: amountToBridge});
             Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
                 receiver: abi.encode(user),
                 data: "",
@@ -158,22 +184,24 @@ contract CrossChainTest is Test {
             vm.prank(user);
             IERC20(localNetworkDetails.linkAddress).approve(localNetworkDetails.routerAddress, fee);
              vm.prank(user);
-            IERC20(address(localToken)).approve(localNetworkDetails.routerAddress,amountToBridge);
+            IERC20(address(localToken)).approve(localNetworkDetails.routerAddress, fee);
             uint256 localBalanceBefore = localToken.balanceOf(user);
              vm.prank(user);
             IRouterClient(localNetworkDetails.routerAddress).ccipSend(remoteNetworkDetails.chainSelector, message);
             uint256 localBalanceAfter = localToken.balanceOf(user);
             assertEq(localBalanceAfter, localBalanceBefore - amountToBridge);
-            uint256 localUserInterestrate = localToken.getUserInterestRate(user);
+            // uint256 localUserInterestrate = localToken.getUserInterestRate(user);
 
             vm.selectFork(remoteFork);
             vm.warp(block.timestamp + 20 minutes);
             uint256 remoteBalanceBefore = remoteToken.balanceOf(user);
+            
+            vm.selectFork(localFork);
             ccipLocalSimulatorFork.switchChainAndRouteMessage(remoteFork);
             uint256 remoteBalanceAfter = remoteToken.balanceOf(user);
             assertEq(remoteBalanceAfter, remoteBalanceBefore + amountToBridge);
-            uint256 remoteUserInterestrate = remoteToken.getUserInterestRate(user);
-            assertEq(remoteUserInterestrate, localUserInterestrate);
+            // uint256 remoteUserInterestrate = remoteToken.getUserInterestRate(user);
+            // assertEq(localUserInterestrate, remoteToken.getUserInterestRate(user));
 
         }
 

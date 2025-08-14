@@ -11,7 +11,7 @@ contract RebaseTokenPool is TokenPool {
     constructor(IERC20 _token, address[] memory _allowlist, address _rmnProxy, address _router)
     TokenPool(_token, _allowlist, _rmnProxy, _router){}
 
-    function lockOrBurn(Pool.LockOrBurnInV1 calldata lockOrBurnIn) external override
+    function lockOrBurn(Pool.LockOrBurnInV1 calldata lockOrBurnIn) external
     returns(Pool.LockOrBurnOutV1 memory lockOrBurnOut) {
         _validateLockOrBurn(lockOrBurnIn);
         uint256 userInterestRate = IRebaseToken(address(i_token)).getUserInterestRate(lockOrBurnIn.originalSender);
@@ -22,7 +22,7 @@ contract RebaseTokenPool is TokenPool {
         });
     }
 
-    function releaseOrMint(Pool.ReleaseOrMintInV1 calldata releaseOrMintIn) external override
+    function releaseOrMint(Pool.ReleaseOrMintInV1 calldata releaseOrMintIn) external
     returns (Pool.ReleaseOrMintOutV1 memory) {
         _validateReleaseOrMint(releaseOrMintIn);
         uint256 userInterestRate = abi.decode(releaseOrMintIn.sourcePoolData, (uint256));
